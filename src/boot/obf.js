@@ -1,7 +1,7 @@
 // src/boot/obf.js
-import { lookupOBF } from 'src/services/openBeautyFactsService'
+import { lookupProduct } from 'src/services/openFoodFactsService'
 
 // só em ambiente browser
 if (typeof window !== 'undefined') {
-  window.lookupOBF = lookupOBF
+  window.lookupOBF = lookupProduct
 }

@@ -1,13 +1,13 @@
 <!-- src/components/AddProductDialog.vue -->
 <template>
   <q-dialog v-model="dialog" persistent>
-    <q-card style="min-width: 400px">
+    <q-card class="q-pa-md" style="width: 100%; max-width: 500px">
       <q-card-section>
         <div class="text-h6">Adicionar Produto</div>
       </q-card-section>
 
-      <q-card-section>
-        <q-tabs v-model="tab" dense>
+      <q-card-section class="q-gutter-y-md">
+        <q-tabs v-model="tab" dense align="justify">
           <q-tab name="barcode" label="Código de Barras" icon="barcode" />
           <q-tab name="qr" label="QR Code" icon="qr_code" />
           <q-tab name="manual" label="Manual" icon="edit" />
@@ -15,70 +15,70 @@
 
         <q-separator />
 
-        <!-- Aba Código de Barras -->
-        <div v-if="tab === 'barcode'">
-          <!-- Escolha de método -->
-          <div class="row q-col-gutter-sm q-mb-md">
+        <!-- Código de Barras -->
+        <div v-if="tab === 'barcode'" class="q-gutter-y-md">
+          <div class="row q-col-gutter-sm">
             <q-btn
-              flat
-              outline
-              :color="modeBarcode === 'camera' ? 'primary' : undefined"
+              unelevated
+              :color="modeBarcode === 'camera' ? 'primary' : 'grey-5'"
               label="Usar Câmera"
               icon="camera_alt"
+              class="col"
               @click="modeBarcode = 'camera'"
             />
             <q-btn
-              flat
-              outline
-              :color="modeBarcode === 'input' ? 'primary' : undefined"
+              unelevated
+              :color="modeBarcode === 'input' ? 'primary' : 'grey-5'"
               label="Digitar Código"
               icon="keyboard"
+              class="col"
               @click="modeBarcode = 'input'"
             />
           </div>
 
-          <!-- Scanner de Câmera -->
-          <div v-if="modeBarcode === 'camera'" class="q-mb-md">
+          <div v-if="modeBarcode === 'camera'">
             <BarcodeScanner @onDetected="onDetected" />
           </div>
 
-          <!-- Input manual do código -->
-          <div v-else-if="modeBarcode === 'input'" class="q-mb-md">
+          <div v-else-if="modeBarcode === 'input'">
             <q-input
               v-model="barcodeInput"
               label="Digite o código de barras"
               placeholder="Ex: 3560070791460"
               clearable
+              filled
             />
           </div>
 
-          <!-- Botão de buscar dados -->
           <q-btn
             label="Buscar dados"
             icon="search"
             @click="lookupByBarcode"
             :loading="loading"
             :disable="!barcodeInput"
-            class="q-mt-md"
+            color="primary"
+            class="full-width"
           />
 
-          <div v-if="apiError" class="text-negative q-mt-sm">
+          <div v-if="apiError" class="text-negative">
             {{ apiError }}
           </div>
         </div>
 
-        <!-- Aba QR Code -->
+        <!-- QR Code -->
         <div v-else-if="tab === 'qr'">
-          <p>A implementar: scanner de QR Code</p>
+          <q-banner dense class="bg-grey-3 text-grey-9">
+            A funcionalidade de QR Code ainda será implementada.
+          </q-banner>
         </div>
 
-        <!-- Aba Manual -->
-        <div v-else>
-          <q-input v-model="form.name" label="Nome" />
-          <q-input v-model="form.brand" label="Marca" />
-          <q-input v-model.number="form.stock" type="number" label="Estoque" />
-          <q-input v-model.number="form.cost" type="number" label="Custo (R$)" />
-          <q-input v-model.number="form.price" type="number" label="Preço de Venda (R$)" />
+        <!-- Manual -->
+        <div v-else class="q-gutter-y-sm">
+          <q-input v-model="form.name" label="Nome" filled />
+          <q-input v-model="form.brand" label="Marca" filled />
+          <q-input v-model.number="form.stock" type="number" label="Estoque" filled />
+          <q-input v-model.number="form.cost" type="number" label="Custo (R$)" filled />
+          <q-input v-model.number="form.price" type="number" label="Preço de Venda (R$)" filled />
         </div>
       </q-card-section>
 
@@ -93,7 +93,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import BarcodeScanner from './BarcodeScanner.vue'
-import { lookupOBF } from '../services/openBeautyFactsService'
+import { lookupProduct } from '../services/openFoodFactsService'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -160,7 +160,9 @@ async function lookupByBarcode() {
   loading.value = true
 
   try {
-    const prod = await lookupOBF(barcodeInput.value)
+    const prod = await lookupProduct(barcodeInput.value)
+
+    console.log('PRODUTO ENCONTRADO: ', prod)
 
     if (!prod) {
       apiError.value = 'Produto não encontrado no Open Beauty Facts'
@@ -169,7 +171,6 @@ async function lookupByBarcode() {
       form.value.brand = prod.brands?.split(',')[0] || ''
       form.value.imageUrl = prod.images?.small || ''
       form.value.description = prod.ingredients_text || ''
-      // estoque, cost e price continuam para preenchimento manual
     }
   } catch (err) {
     console.error(err)

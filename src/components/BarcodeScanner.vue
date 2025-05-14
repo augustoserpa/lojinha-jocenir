@@ -1,7 +1,8 @@
 <template>
-  <div class="barcode-scanner">
-    <video ref="video" class="full-width" />
-    <div v-if="error" class="text-negative q-mt-sm">{{ error }}</div>
+  <div class="barcode-scanner column items-center q-gutter-sm">
+    <video ref="video" autoplay playsinline class="full-width" />
+    <div v-if="error" class="text-negative">{{ error }}</div>
+    <div v-else class="text-caption text-grey-7">Aguardando leitura do código...</div>
   </div>
 </template>
 
@@ -18,37 +19,51 @@ const props = defineProps({
 
 const video = ref(null)
 const error = ref('')
+const found = ref(false)
 let codeReader
 
-onMounted(() => {
-  codeReader = new BrowserMultiFormatReader()
-  codeReader
-    .listVideoInputDevices()
-    .then((devices) => {
-      // escolhe a câmera traseira (última da lista)
-      const deviceId = devices[devices.length - 1].deviceId
-      return codeReader.decodeFromVideoDevice(deviceId, video.value, (result, err) => {
-        if (result) {
-          props.onDetected(result.getText())
-          codeReader.reset()
-        }
-        if (err && !(err.name === 'NotFoundException')) {
-          // ignora “no barcode found” e mostra outros erros
-          error.value = err.message
-        }
-      })
+onMounted(async () => {
+  try {
+    codeReader = new BrowserMultiFormatReader()
+    const devices = await codeReader.listVideoInputDevices()
+    const deviceId = devices[devices.length - 1]?.deviceId
+
+    if (!deviceId) {
+      error.value = 'Nenhuma câmera disponível.'
+      return
+    }
+
+    await codeReader.decodeFromVideoDevice(deviceId, video.value, (result, err) => {
+      if (found.value) return
+      if (result) {
+        found.value = true
+        props.onDetected(result.getText())
+        codeReader.reset()
+        stopCamera()
+      }
+      if (err && err.name !== 'NotFoundException') {
+        error.value = err.message
+      }
     })
-    .catch((err) => {
-      console.error(err)
-      error.value = 'Não foi possível acessar a câmera'
-    })
+  } catch (err) {
+    console.error(err)
+    error.value = 'Não foi possível acessar a câmera'
+  }
 })
 
 onBeforeUnmount(() => {
   if (codeReader) {
     codeReader.reset()
   }
+  stopCamera()
 })
+
+function stopCamera() {
+  const stream = video.value?.srcObject
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop())
+  }
+}
 </script>
 
 <style scoped>
