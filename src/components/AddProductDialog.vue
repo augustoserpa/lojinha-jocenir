@@ -7,51 +7,46 @@
       </q-card-section>
 
       <q-card-section class="q-gutter-y-md">
-        <q-tabs v-model="tab" dense align="justify">
-          <q-tab name="barcode" label="Código de Barras" icon="barcode" />
-          <q-tab name="qr" label="QR Code" icon="qr_code" />
-          <q-tab name="manual" label="Manual" icon="edit" />
-        </q-tabs>
+        <!-- Entrada do código de barras -->
+        <div class="q-gutter-y-sm">
+          <div class="text-subtitle2">Identificação do Produto</div>
 
-        <q-separator />
-
-        <!-- Código de Barras -->
-        <div v-if="tab === 'barcode'" class="q-gutter-y-md">
           <div class="row q-col-gutter-sm">
             <q-btn
               unelevated
-              :color="modeBarcode === 'camera' ? 'primary' : 'grey-5'"
-              label="Usar Câmera"
-              icon="camera_alt"
+              color="primary"
+              label="Escanear com Câmera"
+              icon="photo_camera"
               class="col"
-              @click="modeBarcode = 'camera'"
+              @click="modoBarra = 'camera'"
             />
             <q-btn
               unelevated
-              :color="modeBarcode === 'input' ? 'primary' : 'grey-5'"
+              color="primary"
               label="Digitar Código"
               icon="keyboard"
               class="col"
-              @click="modeBarcode = 'input'"
+              @click="modoBarra = 'manual'"
             />
           </div>
 
-          <div v-if="modeBarcode === 'camera'">
+          <div v-if="modoBarra === 'camera'">
+            <!-- Componente de leitura de código -->
             <BarcodeScanner @onDetected="onDetected" />
           </div>
 
-          <div v-else-if="modeBarcode === 'input'">
+          <div v-else-if="modoBarra === 'manual'">
             <q-input
               v-model="barcodeInput"
               label="Digite o código de barras"
-              placeholder="Ex: 3560070791460"
+              placeholder="Ex: 7891234567890"
               clearable
               filled
             />
           </div>
 
           <q-btn
-            label="Buscar dados"
+            label="Buscar Produto"
             icon="search"
             @click="lookupByBarcode"
             :loading="loading"
@@ -60,25 +55,63 @@
             class="full-width"
           />
 
-          <div v-if="apiError" class="text-negative">
-            {{ apiError }}
-          </div>
+          <div v-if="apiError" class="text-negative">{{ apiError }}</div>
         </div>
 
-        <!-- QR Code -->
-        <div v-else-if="tab === 'qr'">
-          <q-banner dense class="bg-grey-3 text-grey-9">
-            A funcionalidade de QR Code ainda será implementada.
-          </q-banner>
-        </div>
+        <!-- Campos do produto -->
+        <div class="q-gutter-y-sm">
+          <q-input v-model="form.name" label="Nome do Produto" filled />
 
-        <!-- Manual -->
-        <div v-else class="q-gutter-y-sm">
-          <q-input v-model="form.name" label="Nome" filled />
-          <q-input v-model="form.brand" label="Marca" filled />
-          <q-input v-model.number="form.stock" type="number" label="Estoque" filled />
-          <q-input v-model.number="form.cost" type="number" label="Custo (R$)" filled />
+          <!-- Sugestão: usar valores com autocomplete + valores anteriores -->
+          <q-select
+            v-model="form.brand"
+            :options="suggestedBrands"
+            use-input
+            fill-input
+            label="Marca"
+            filled
+            new-value-mode="add"
+          />
+
+          <q-select
+            v-model="form.type"
+            :options="suggestedTypes"
+            use-input
+            fill-input
+            label="Tipo de Produto"
+            filled
+            new-value-mode="add"
+          />
+
+          <!-- Aqui também pode-se usar sugestões pré-definidas + aprendidas -->
+          <q-select
+            v-model="form.packaging"
+            :options="suggestedPackaging"
+            use-input
+            fill-input
+            label="Tipo de Embalagem"
+            filled
+            new-value-mode="add"
+          />
+
+          <q-input v-model.number="form.volume" type="number" label="Volume (ml/g)" filled />
+
+          <q-input v-model.number="form.stock" type="number" label="Estoque Inicial" filled />
+          <q-input v-model.number="form.cost" type="number" label="Preço de Custo (R$)" filled />
           <q-input v-model.number="form.price" type="number" label="Preço de Venda (R$)" filled />
+
+          <q-input
+            v-model="form.description"
+            type="textarea"
+            label="Descrição detalhada"
+            autogrow
+            filled
+          />
+
+          <!-- Adição futura: upload de imagem(s) -->
+          <q-banner class="bg-grey-2 text-grey-8"
+            >Espaço reservado para upload de imagem do produto</q-banner
+          >
         </div>
       </q-card-section>
 
@@ -93,88 +126,80 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import BarcodeScanner from './BarcodeScanner.vue'
-import { lookupProduct } from '../services/openFoodFactsService'
 
 const props = defineProps({
   modelValue: Boolean,
 })
 const emit = defineEmits(['update:modelValue', 'added'])
 
-// proxy para v-model do diálogo
 const dialog = computed({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 })
 
-// abas e modos
-const tab = ref('manual')
-// modo interno para aba barcode: 'none' | 'camera' | 'input'
-const modeBarcode = ref('none')
+const modoBarra = ref('manual')
+const barcodeInput = ref('')
+const apiError = ref('')
+const loading = ref(false)
 
 const form = ref({
   id: null,
   name: '',
   brand: '',
+  type: '',
+  packaging: '',
+  volume: null,
   stock: 0,
   cost: 0,
   price: 0,
-  imageUrl: '',
   description: '',
 })
-const barcodeInput = ref('')
-const loading = ref(false)
-const apiError = ref('')
 
-// reset de estado ao abrir/fechar diálogo
+// Sugestões pré-definidas + futuras sugestões armazenadas no IndexedDB
+const suggestedBrands = ref(['Nivea', 'Dove', 'Colgate'])
+const suggestedTypes = ref(['Shampoo', 'Condicionador', 'Sabonete', 'Kit Higiene'])
+const suggestedPackaging = ref(['Frasco', 'Pote', 'Bisnaga', 'Sachê'])
+
 watch(
   () => dialog.value,
-  (opened) => {
-    if (opened) {
-      tab.value = 'manual'
-      modeBarcode.value = 'none'
+  (open) => {
+    if (open) {
+      modoBarra.value = 'manual'
+      barcodeInput.value = ''
+      apiError.value = ''
+      loading.value = false
       form.value = {
         id: Date.now(),
         name: '',
         brand: '',
+        type: '',
+        packaging: '',
+        volume: null,
         stock: 0,
         cost: 0,
         price: 0,
-        imageUrl: '',
         description: '',
       }
-      barcodeInput.value = ''
-      apiError.value = ''
-      loading.value = false
     }
   },
 )
 
-// recebe código lido pela câmera
 function onDetected(code) {
   barcodeInput.value = code
-  modeBarcode.value = 'input'
+  modoBarra.value = 'manual'
 }
 
 async function lookupByBarcode() {
   apiError.value = ''
   loading.value = true
-
   try {
-    const prod = await lookupProduct(barcodeInput.value)
-
-    console.log('PRODUTO ENCONTRADO: ', prod)
-
-    if (!prod) {
-      apiError.value = 'Produto não encontrado no Open Beauty Facts'
-    } else {
-      form.value.name = prod.product_name || ''
-      form.value.brand = prod.brands?.split(',')[0] || ''
-      form.value.imageUrl = prod.images?.small || ''
-      form.value.description = prod.ingredients_text || ''
-    }
+    // Buscar no IndexedDB (no futuro)
+    // Por enquanto, simulando como se fosse novo
+    // Pode-se preencher o form com base em resultado
+    console.log('Código escaneado ou digitado:', barcodeInput.value)
   } catch (err) {
+    apiError.value = 'Erro ao consultar produto'
     console.error(err)
-    apiError.value = 'Erro ao consultar o OBF'
   } finally {
     loading.value = false
   }
@@ -187,5 +212,8 @@ function save() {
 </script>
 
 <style scoped>
-/* ajustes de estilo, se desejar */
+video {
+  border-radius: 4px;
+  max-height: 300px;
+}
 </style>

@@ -27,6 +27,11 @@ const routes = [
         name: 'produtos',
         component: () => import('pages/ProdutosApp.vue'),
       },
+      {
+        path: 'product-entry',
+        name: 'product-entry',
+        component: () => import('pages/ProductEntry.vue'),
+      },
       // adicione outras rotas protegidas aqui...
     ],
   },
