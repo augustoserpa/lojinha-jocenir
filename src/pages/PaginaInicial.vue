@@ -1,23 +1,12 @@
 <template>
   <q-page padding>
-    <!-- Banner de boas-vindas + logout -->
-    <q-banner class="bg-primary text-white q-mb-lg">
-      <template v-slot:avatar>
-        <q-icon name="home" size="2em" />
-      </template>
-      <div class="text-h6">Bem-vindo à Lojinha da Jocenir</div>
-      <template v-slot:action>
-        <q-btn flat round dense icon="logout" @click="logout" />
-      </template>
-    </q-banner>
-
     <!-- Container vertical, cards empilhados e espaçados -->
     <div class="column items-center q-pa-md" style="max-width: 600px; margin: 0 auto">
       <!-- Cada card ocupa toda a largura do contêiner e tem q-mb-md (margin-bottom) -->
       <q-card class="menu-card full-width q-mb-md">
         <q-card-section class="row items-center">
           <q-icon name="inventory" size="2em" />
-          <span class="text-h6 q-ml-sm">Produtos 📦</span>
+          <span class="text-h6 q-ml-sm">Produtos</span>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn flat label="Abrir" to="/app/produtos" />
@@ -87,16 +76,7 @@
   </q-page>
 </template>
 
-<script setup>
-import { useRouter } from 'vue-router'
-const router = useRouter()
-
-function logout() {
-  localStorage.removeItem('authenticated')
-  sessionStorage.removeItem('authenticated')
-  router.replace('/login')
-}
-</script>
+<script setup></script>
 
 <style scoped>
 .menu-card {
@@ -106,7 +86,6 @@ function logout() {
 .menu-card:hover {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
-/* full-width faz o card ocupar 100% do contêiner pai */
 .full-width {
   width: 100%;
 }

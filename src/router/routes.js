@@ -9,7 +9,7 @@ const routes = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('pages/LoginApp.vue'),
+    component: () => import('src/pages/PaginaLogin.vue'),
   },
 
   // 3) Layout principal para telas autenticadas
@@ -20,17 +20,17 @@ const routes = [
       {
         path: 'home',
         name: 'home',
-        component: () => import('pages/HomeApp.vue'),
+        component: () => import('src/pages/PaginaInicial.vue'),
       },
       {
         path: 'produtos',
         name: 'produtos',
-        component: () => import('pages/ProdutosApp.vue'),
+        component: () => import('src/pages/PaginaListaProdutos.vue'),
       },
       {
-        path: 'product-entry',
-        name: 'product-entry',
-        component: () => import('pages/ProductEntry.vue'),
+        path: 'cadastro',
+        name: 'cadastro',
+        component: () => import('src/pages/CadastroNovosProdutos.vue'),
       },
       // adicione outras rotas protegidas aqui...
     ],
@@ -39,7 +39,7 @@ const routes = [
   // 4) fallback para 404
   {
     path: '/:catchAll(.*)*',
-    component: () => import('pages/ErrorNotFound.vue'),
+    component: () => import('src/pages/PaginaErroPadrao.vue'),
   },
 ]
 

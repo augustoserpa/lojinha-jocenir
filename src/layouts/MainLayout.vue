@@ -1,53 +1,55 @@
 <!-- src/layouts/MainLayout.vue -->
 <template>
   <q-layout view="lHh Lpr lFf">
-    <!-- Cabeçalho -->
-    <q-header elevated>
+    <!-- Cabeçalho com nome do app e logout -->
+    <q-header elevated class="bg-primary text-white">
       <q-toolbar>
-        <q-toolbar-title> Lojinha da Jocenir </q-toolbar-title>
-        <div>Quasar v{{ $q.version }}</div>
+        <q-toolbar-title>Lojinha da Jocenir</q-toolbar-title>
+        <q-btn flat dense icon="logout" @click="logout" label="Sair" />
       </q-toolbar>
+      <q-banner v-if="showWelcome" class="bg-yellow-2 text-black text-center">
+        Bem-vinda à melhor lojinha do universo!
+      </q-banner>
     </q-header>
 
-    <!-- Container principal de páginas -->
+    <!-- Container principal -->
     <q-page-container>
-      <router-view />
+      <router-view @navigated="handleNavigation" />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
-// logout automático por inatividade (15 minutos)
-let timeoutID
-const INACTIVITY_LIMIT = 15 * 60 * 1000
+const showWelcome = ref(false)
 
-function resetTimer() {
-  clearTimeout(timeoutID)
-  timeoutID = setTimeout(() => {
-    localStorage.removeItem('authenticated')
-    sessionStorage.removeItem('authenticated')
-    router.replace('/login')
-  }, INACTIVITY_LIMIT)
+function checkWelcomeMessage() {
+  const visited = sessionStorage.getItem('hasVisited')
+  showWelcome.value = !visited && route.name === 'home'
+  if (route.name === 'home') {
+    sessionStorage.setItem('hasVisited', 'true')
+  }
 }
 
-onMounted(() => {
-  const events = ['click', 'keydown', 'touchstart']
-  events.forEach((evt) => window.addEventListener(evt, resetTimer))
-  resetTimer()
-})
+watch(
+  () => route.name,
+  () => {
+    checkWelcomeMessage()
+  },
+)
 
-onBeforeUnmount(() => {
-  const events = ['click', 'keydown', 'touchstart']
-  events.forEach((evt) => window.removeEventListener(evt, resetTimer))
-  clearTimeout(timeoutID)
-})
+function logout() {
+  sessionStorage.removeItem('hasVisited')
+  localStorage.removeItem('authenticated')
+  router.replace('/login')
+}
+
+checkWelcomeMessage()
 </script>
 
-<style scoped>
-/* estilos do layout, se quiser customizar */
-</style>
+<style scoped></style>

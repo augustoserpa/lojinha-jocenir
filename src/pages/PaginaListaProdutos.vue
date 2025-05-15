@@ -1,4 +1,4 @@
-<!-- src/pages/Produtos.vue -->
+<!-- src/pages/PaginaListaProdutos.vue -->
 <template>
   <q-page padding>
     <!-- Toolbar -->
@@ -27,7 +27,7 @@
         round
         icon="add"
         aria-label="Adicionar Produto"
-        @click="openAddDialog"
+        @click="goToCadastro"
         class="q-ml-sm"
       />
     </q-toolbar>
@@ -46,9 +46,7 @@
       </div>
     </div>
 
-    <!-- Dialogs de adicionar/editar -->
-    <AddProductDialog v-model="addDialogOpen" @added="onProductAdded" />
-
+    <!-- Dialog de editar produto -->
     <EditProductDialog
       v-model="editDialog.show"
       :product="editDialog.product"
@@ -59,13 +57,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ProductCard from 'components/ProductCard.vue'
-import AddProductDialog from 'components/AddProductDialog.vue'
-import EditProductDialog from 'components/EditProductDialog.vue'
 
-// --- estado local
+const router = useRouter()
+
 const products = ref([
-  // Exemplo inicial; mais tarde você busca do Firestore
   {
     id: 1,
     image: 'https://via.placeholder.com/150',
@@ -87,12 +84,8 @@ const products = ref([
 ])
 
 const filter = ref('')
-
-// controla dialogs
-const addDialogOpen = ref(false)
 const editDialog = ref({ show: false, product: null })
 
-// 1) lista filtrada
 const filteredProducts = computed(() => {
   const q = filter.value.trim().toLowerCase()
   if (!q) return products.value
@@ -101,22 +94,14 @@ const filteredProducts = computed(() => {
   )
 })
 
-// 2) abrir diálogo de adicionar
-function openAddDialog() {
-  addDialogOpen.value = true
+function goToCadastro() {
+  router.push('/app/cadastro')
 }
 
-// 3) callback quando um novo produto é adicionado
-function onProductAdded(newProd) {
-  products.value.push(newProd)
-}
-
-// 4) abrir diálogo de editar
 function openEditDialog(prod) {
   editDialog.value = { show: true, product: { ...prod } }
 }
 
-// 5) callback quando um produto foi editado
 function onProductUpdated(updated) {
   const idx = products.value.findIndex((p) => p.id === updated.id)
   if (idx !== -1) {
@@ -125,6 +110,4 @@ function onProductUpdated(updated) {
 }
 </script>
 
-<style scoped>
-/* ajuste de responsividade ou margens */
-</style>
+<style scoped></style>
